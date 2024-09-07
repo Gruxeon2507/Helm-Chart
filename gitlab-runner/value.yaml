@@ -1,0 +1,28 @@
+image: 
+  repository: gitlab/gitlab-runner:latest
+replicas: 1
+gitlabUrl: https://gitlab.com/
+runnerRegistrationToken: <token-here>
+unregisterRunners: true
+concurrent: 10
+logLevel: info
+logFormat: text
+metrics:
+  enabled: false
+runners:
+  tags: runner
+  config: |
+    [[runners]]
+      [runners.kubernetes]
+        cpu_limit = "1"
+        cpu_request = "0.1"
+        memory_limit = "1Gi"
+        memory_request = "100Mi"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 25m
+    memory: 128Mi
