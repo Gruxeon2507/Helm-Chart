@@ -1,0 +1,56 @@
+server:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    
+alertmanager:
+  extraArgs:
+    cluster.advertise-address: "[$(POD_IP)]:9093"
+  config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by: ['alertname', 'cluster', 'service']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 12h
+        receiver: 'msteam'
+      receivers:
+      - name: 'msteam'
+        msteams_configs:
+        - send_resolved: true
+          webhook_url: 'https://fptuniversity.webhook.office.com/webhookb2/28799cd5-245a-448f-a677-b0073796fc70@447080b4-b9c6-4b0b-92fd-b543a68b4e97/IncomingWebhook/a70087c73d554337a92a5a7b206dc611/d4876c55-e7cd-4aac-b4cb-8d62f3df5b9'
+
+serverFiles:
+  alerting_rules.yml:
+    groups:
+      - name: mongodb_rules
+        rules:
+          - alert: MongoDBDown
+            expr: mongodb_up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "MongoDB is down"
+              description: "MongoDB is down for more than 1 minute"
+          - alert: MongodbReplicaMemberUnhealthy
+            expr: mongodb_rs_members_health == 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: Mongodb replica member unhealthy (instance {{ $labels.instance }})
+              description: "MongoDB replica member is not healthy\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+          - alert: MongodbVirtualMemoryUsage
+            expr: (sum(mongodb_ss_mem_virtual) BY (instance) / sum(mongodb_ss_mem_resident) BY (instance)) > 3
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: MongoDB virtual memory usage (instance {{ $labels.instance }})
+              description: "High memory usage\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}" 
